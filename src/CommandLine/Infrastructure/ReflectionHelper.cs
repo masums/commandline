@@ -45,10 +45,10 @@ namespace CommandLine.Infrastructure
             // Test support
             if (_overrides != null)
             {
-                return 
+                return
                     _overrides.ContainsKey(typeof(TAttribute)) ?
                         Maybe.Just((TAttribute)_overrides[typeof(TAttribute)]) :
-                        Maybe.Nothing< TAttribute>();
+                        Maybe.Nothing<TAttribute>();
             }
 
             var assembly = GetExecutingOrEntryAssembly();
@@ -85,15 +85,17 @@ namespace CommandLine.Infrastructure
         public static T CreateDefaultImmutableInstance<T>(Type[] constructorTypes)
         {
             var t = typeof(T);
-            var ctor = t.GetTypeInfo().GetConstructor(constructorTypes);
-            var values = (from prms in ctor.GetParameters()
-                          select prms.ParameterType.CreateDefaultForImmutable()).ToArray();
-            return (T)ctor.Invoke(values);
+            return (T)CreateDefaultImmutableInstance(t, constructorTypes);
         }
 
         public static object CreateDefaultImmutableInstance(Type type, Type[] constructorTypes)
         {
             var ctor = type.GetTypeInfo().GetConstructor(constructorTypes);
+            if (ctor == null)
+            {
+                throw new InvalidOperationException($"Type {type.FullName} appears to be immutable, but no constructor found to accept values.");
+            }
+
             var values = (from prms in ctor.GetParameters()
                           select prms.ParameterType.CreateDefaultForImmutable()).ToArray();
             return ctor.Invoke(values);
@@ -101,13 +103,19 @@ namespace CommandLine.Infrastructure
 
         private static Assembly GetExecutingOrEntryAssembly()
         {
-            var assembly = Assembly.GetEntryAssembly();
+            //resolve issues of null EntryAssembly in Xunit Test #392,424,389
+            //return Assembly.GetEntryAssembly();
+            return Assembly.GetEntryAssembly() ?? Assembly.GetCallingAssembly();
+        }
 
-#if !NETSTANDARD1_5
-            assembly = assembly ?? Assembly.GetExecutingAssembly();
-#endif
-
-            return assembly;
+       public static IEnumerable<string> GetNamesOfEnum(Type t)
+        {
+            if (t.IsEnum)
+                return Enum.GetNames(t);
+            Type u = Nullable.GetUnderlyingType(t);
+            if (u != null && u.IsEnum)
+                return Enum.GetNames(u);
+            return Enumerable.Empty<string>();
         }
     }
 }

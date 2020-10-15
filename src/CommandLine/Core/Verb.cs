@@ -3,49 +3,42 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-#if !NET40
 using System.Reflection;
-#endif
 
 namespace CommandLine.Core
 {
     sealed class Verb
     {
-        private readonly string name;
-        private readonly string helpText;
-        private readonly bool hidden;
-
-        public Verb(string name, string helpText, bool hidden = false)
+        public Verb(string name, string helpText, bool hidden, bool isDefault, string[] aliases)
         {
-            if (name == null) throw new ArgumentNullException("name");
-            if (helpText == null) throw new ArgumentNullException("helpText");
+            if (string.IsNullOrWhiteSpace(name))
+                throw new ArgumentNullException(nameof(name));
+            Name = name;
 
-            this.name = name;
-            this.helpText = helpText;
-            this.hidden = hidden;
+            HelpText = helpText ?? throw new ArgumentNullException(nameof(helpText));
+            Hidden = hidden;
+            IsDefault = isDefault;
+            Aliases = aliases ?? new string[0];
         }
 
-        public string Name
-        {
-            get { return name; }
-        }
+        public string Name { get; private set; }
 
-        public string HelpText
-        {
-            get { return helpText; }
-        }
+        public string HelpText { get; private set; }
 
-        public bool Hidden
-        {
-            get { return hidden; }
-        }
+        public bool Hidden { get; private set; }
+
+        public bool IsDefault { get; private set; }
+
+        public string[] Aliases { get; private set; }
 
         public static Verb FromAttribute(VerbAttribute attribute)
         {
             return new Verb(
                 attribute.Name,
                 attribute.HelpText,
-                attribute.Hidden
+                attribute.Hidden,
+                attribute.IsDefault,
+                attribute.Aliases
                 );
         }
 

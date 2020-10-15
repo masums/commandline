@@ -12,8 +12,9 @@ namespace CommandLine
         private int min;
         private int max;
         private object @default;
-        private string helpText;
+        private Infrastructure.LocalizableAttributeProperty helpText;
         private string metaValue;
+        private Type resourceType;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CommandLine.BaseAttribute"/> class.
@@ -22,8 +23,9 @@ namespace CommandLine
         {
             min = -1;
             max = -1;
-            helpText = string.Empty;
+            helpText = new Infrastructure.LocalizableAttributeProperty(nameof(HelpText));
             metaValue = string.Empty;
+            resourceType = null;
         }
 
         /// <summary>
@@ -90,16 +92,8 @@ namespace CommandLine
         /// </summary>
         public string HelpText
         {
-            get { return helpText; }
-            set
-            {
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-
-                helpText = value;
-            }
+            get => helpText.Value??string.Empty;
+            set => helpText.Value = value ?? throw new ArgumentNullException("value");
         }
 
         /// <summary>
@@ -126,6 +120,19 @@ namespace CommandLine
         {
             get;
             set;
+        }
+
+        /// <summary>
+        /// Gets or sets the <see cref="System.Type"/> that contains the resources for <see cref="HelpText"/>.
+        /// </summary>
+        public Type ResourceType
+        {
+            get { return resourceType; }
+            set
+            {
+                resourceType =
+                helpText.ResourceType = value;
+            }
         }
     }
 }

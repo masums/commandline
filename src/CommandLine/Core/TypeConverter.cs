@@ -4,9 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-#if PLATFORM_DOTNET
-using System.Reflection;
-#endif
 using CommandLine.Infrastructure;
 using CSharpx;
 using RailwaySharp.ErrorHandling;
@@ -114,6 +111,7 @@ namespace CommandLine.Core
                 }
             };
 
+            if (conversionType.IsCustomStruct()) return Result.Try(makeType);
             return Result.Try(
                 conversionType.IsPrimitiveEx() || ReflectionHelper.IsFSharpOptionType(conversionType)
                     ? changeType
@@ -131,11 +129,20 @@ namespace CommandLine.Core
             {
                 throw new FormatException();
             }
-            if (Enum.IsDefined(conversionType, parsedValue))
+            if (IsDefinedEx(parsedValue))
             {
                 return parsedValue;
             }
             throw new FormatException();
+        }
+
+        private static bool IsDefinedEx(object enumValue)
+        {
+            char firstChar = enumValue.ToString()[0];
+            if (Char.IsDigit(firstChar) || firstChar == '-')
+                return false;
+
+            return true;
         }
     }
 }

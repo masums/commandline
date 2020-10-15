@@ -11,24 +11,22 @@ namespace CommandLine.Core
     static class TokenPartitioner
     {
         public static
-            Tuple<
-                IEnumerable<KeyValuePair<string, IEnumerable<string>>>, // options
-                IEnumerable<string>,                                    // values
-                IEnumerable<Token>                                      // errors
-            > Partition(
+            Tuple<IEnumerable<KeyValuePair<string, IEnumerable<string>>>, IEnumerable<string>, IEnumerable<Token>> Partition(
                 IEnumerable<Token> tokens,
                 Func<string, Maybe<TypeDescriptor>> typeLookup)
         {
-            var tokenList = tokens.Memorize();
-            var switches = Switch.Partition(tokenList, typeLookup).Memorize();
-            var scalars = Scalar.Partition(tokenList, typeLookup).Memorize();
-            var sequences = Sequence.Partition(tokenList, typeLookup).Memorize();
+            IEqualityComparer<Token> tokenComparer = ReferenceEqualityComparer.Default;
+
+            var tokenList = tokens.Memoize();
+            var switches = new HashSet<Token>(Switch.Partition(tokenList, typeLookup), tokenComparer);
+            var scalars = new HashSet<Token>(Scalar.Partition(tokenList, typeLookup), tokenComparer);
+            var sequences = new HashSet<Token>(Sequence.Partition(tokenList, typeLookup), tokenComparer);
             var nonOptions = tokenList
-                .Where(t => !switches.Contains(t, ReferenceEqualityComparer.Default))
-                .Where(t => !scalars.Contains(t, ReferenceEqualityComparer.Default))
-                .Where(t => !sequences.Contains(t, ReferenceEqualityComparer.Default)).Memorize();
-            var values = nonOptions.Where(v => v.IsValue()).Memorize();
-            var errors = nonOptions.Except(values, (IEqualityComparer<Token>)ReferenceEqualityComparer.Default).Memorize();
+                .Where(t => !switches.Contains(t))
+                .Where(t => !scalars.Contains(t))
+                .Where(t => !sequences.Contains(t)).Memoize();
+            var values = nonOptions.Where(v => v.IsValue()).Memoize();
+            var errors = nonOptions.Except(values, (IEqualityComparer<Token>)ReferenceEqualityComparer.Default).Memoize();
 
             return Tuple.Create(
                     KeyValuePairHelper.ForSwitch(switches)

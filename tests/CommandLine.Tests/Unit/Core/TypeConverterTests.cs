@@ -1,15 +1,10 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
-using System.Dynamic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using CommandLine.Core;
-using CSharpx;
-using FluentAssertions;
 using Xunit;
+using FluentAssertions;
+using CSharpx;
+using CommandLine.Core;
 
 namespace CommandLine.Tests.Unit.Core
 {
@@ -21,8 +16,15 @@ namespace CommandLine.Tests.Unit.Core
             ValueB = 2
         }
 
+        [Flags]
+        enum TestFlagEnum
+        {
+            ValueA = 0x1,
+            ValueB = 0x2
+        }
+
         [Theory]
-        [MemberData("ChangeType_scalars_source")]
+        [MemberData(nameof(ChangeType_scalars_source))]
         public void ChangeType_scalars(string testValue, Type destinationType, bool expectFail, object expectedResult)
         {
             Maybe<object> result = TypeConverter.ChangeType(new[] {testValue}, destinationType, true, CultureInfo.InvariantCulture, true);
@@ -33,9 +35,7 @@ namespace CommandLine.Tests.Unit.Core
             }
             else
             {
-                object matchedValue;
-
-                result.MatchJust(out matchedValue).Should().BeTrue("should parse successfully");
+                result.MatchJust(out object matchedValue).Should().BeTrue("should parse successfully");
                 Assert.Equal(matchedValue, expectedResult);
             }
         }
@@ -57,8 +57,8 @@ namespace CommandLine.Tests.Unit.Core
                     new object[] {((long) int.MinValue - 1).ToString(), typeof (int), true, null},
 
                     new object[] {"1", typeof (uint), false, (uint) 1},
-                    new object[] {"0", typeof (uint), false, (uint) 0},
-                    new object[] {"-1", typeof (uint), true, null},
+                   // new object[] {"0", typeof (uint), false, (uint) 0},  //cause warning: Skipping test case with duplicate ID
+                   // new object[] {"-1", typeof (uint), true, null},  //cause warning: Skipping test case with duplicate ID
                     new object[] {uint.MaxValue.ToString(), typeof (uint), false, uint.MaxValue},
                     new object[] {uint.MinValue.ToString(), typeof (uint), false, uint.MinValue},
                     new object[] {((long) uint.MaxValue + 1).ToString(), typeof (uint), true, null},
@@ -100,6 +100,19 @@ namespace CommandLine.Tests.Unit.Core
                     new object[] {((int) TestEnum.ValueB).ToString(), typeof (TestEnum), false, TestEnum.ValueB},
                     new object[] {((int) TestEnum.ValueB + 1).ToString(), typeof (TestEnum), true, null},
                     new object[] {((int) TestEnum.ValueA - 1).ToString(), typeof (TestEnum), true, null},
+
+                    new object[] {"ValueA", typeof (TestFlagEnum), false, TestFlagEnum.ValueA},
+                    new object[] {"VALUEA", typeof (TestFlagEnum), false, TestFlagEnum.ValueA},
+                    new object[] {"ValueB", typeof(TestFlagEnum), false, TestFlagEnum.ValueB},
+                    new object[] {"ValueA,ValueB", typeof (TestFlagEnum), false, TestFlagEnum.ValueA | TestFlagEnum.ValueB},
+                    new object[] {"ValueA, ValueB", typeof (TestFlagEnum), false, TestFlagEnum.ValueA | TestFlagEnum.ValueB},
+                    new object[] {"VALUEA,ValueB", typeof (TestFlagEnum), false, TestFlagEnum.ValueA | TestFlagEnum.ValueB},
+                    new object[] {((int) TestFlagEnum.ValueA).ToString(), typeof (TestFlagEnum), false, TestFlagEnum.ValueA},
+                    new object[] {((int) TestFlagEnum.ValueB).ToString(), typeof (TestFlagEnum), false, TestFlagEnum.ValueB},
+                    new object[] {((int) (TestFlagEnum.ValueA | TestFlagEnum.ValueB)).ToString(), typeof (TestFlagEnum), false, TestFlagEnum.ValueA | TestFlagEnum.ValueB},
+                    new object[] {((int) TestFlagEnum.ValueB + 2).ToString(), typeof (TestFlagEnum), true, null},
+                    new object[] {((int) TestFlagEnum.ValueA - 1).ToString(), typeof (TestFlagEnum), true, null},
+
 
                     // Failed before #339
                     new object[] {"false", typeof (int), true, 0},

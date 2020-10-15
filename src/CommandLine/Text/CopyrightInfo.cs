@@ -1,7 +1,6 @@
 ﻿// Copyright 2005-2015 Giacomo Stelluti Scala & Contributors. All rights reserved. See License.md in the project root for license information.
 
 using System;
-using System.Dynamic;
 using System.Globalization;
 using System.Reflection;
 using System.Text;
@@ -28,11 +27,11 @@ namespace CommandLine.Text
         /// <summary>
         /// An empty object used for initialization.
         /// </summary>
-        public static CopyrightInfo Empty 
+        public static CopyrightInfo Empty
         {
             get
             {
-               return new CopyrightInfo("author", 1); 
+                return new CopyrightInfo("author", DateTime.Now.Year);
             }
         }
 
@@ -116,12 +115,13 @@ namespace CommandLine.Text
                     case MaybeType.Just:
                         return new CopyrightInfo(copyrightAttr.FromJustOrFail());
                     default:
-                        // if no copyright attribute exist but a company attribute does, use it as copyright holder
-                        return new CopyrightInfo(
-                                ReflectionHelper.GetAttribute<AssemblyCompanyAttribute>().FromJustOrFail(
-                                    new InvalidOperationException("CopyrightInfo::Default requires that you define AssemblyCopyrightAttribute or AssemblyCompanyAttribute.")
-                                ).Company,
-                                DateTime.Now.Year);
+                        var companyAttr = ReflectionHelper.GetAttribute<AssemblyCompanyAttribute>();
+                        return companyAttr.IsNothing()
+                            //if both copyrightAttr and companyAttr aren't available in Assembly,don't fire Exception
+                            ? Empty
+                            // if no copyright attribute exist but a company attribute does, use it as copyright holder
+                            : new CopyrightInfo(companyAttr.FromJust().Company, DateTime.Now.Year);
+                        
                 }
             }
         }
